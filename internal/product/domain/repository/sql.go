@@ -18,7 +18,6 @@ type SqlProductRepository struct {
 }
 
 func NewSqlRepository(db *sqlx.DB) IProductRepository {
-
 	return &SqlProductRepository{
 		db: db,
 	}
@@ -42,7 +41,10 @@ func (r *SqlProductRepository) GetByID(ctx context.Context, productID int64) (*e
 			pr.etalase,
 			pr.images,
 			pr.weight,
-			pr.price
+			pr.price,
+			pr.review_count,
+			pr.total_rating,
+			pr.created_at
 		FROM product pr
 		WHERE pr.id = :id
 		ORDER BY 
@@ -95,7 +97,7 @@ func (r *SqlProductRepository) List(ctx context.Context, filter entity.FilterLis
 		return nil, err
 	}
 
-	var models []entity.Product
+	var models = []entity.Product{}
 
 	query := `
 		SELECT
@@ -107,7 +109,10 @@ func (r *SqlProductRepository) List(ctx context.Context, filter entity.FilterLis
 			pr.etalase,
 			pr.images,
 			pr.weight,
-			pr.price
+			pr.price,
+			pr.review_count,
+			pr.total_rating,
+			pr.created_at
 		FROM product pr
 	`
 
@@ -123,12 +128,39 @@ func (r *SqlProductRepository) List(ctx context.Context, filter entity.FilterLis
 		query += strings.Join(paramQuery, " AND ")
 	}
 
-	orderBy := "ASC"
-	if filter.IsDescending {
-		orderBy = "DESC"
+	queryOrderBy := []string{}
+
+	if filter.RatingDescending != nil {
+		ratingOrder := "ASC"
+		if *filter.RatingDescending {
+			ratingOrder = "DESC"
+		}
+
+		queryOrderBy = append(queryOrderBy, fmt.Sprintf(`
+		CASE
+			WHEN review_count = 0 THEN 0
+			ELSE total_rating / review_count
+		END %s
+		`, ratingOrder))
 	}
 
-	query = fmt.Sprintf("%s \nORDER BY created_at %s", query, orderBy)
+	if filter.CreatedDescending != nil {
+		createdOrder := "ASC"
+		if *filter.CreatedDescending {
+			createdOrder = "DESC"
+		}
+		queryOrderBy = append(queryOrderBy, fmt.Sprintf(`
+			created_at %s
+		`, createdOrder))
+	}
+
+	if len(queryOrderBy) > 0 {
+		joinedOrderBy := strings.Join(queryOrderBy, " , ")
+		query = fmt.Sprintf(`
+			%s
+			ORDER BY %s
+		`, query, joinedOrderBy)
+	}
 
 	rows, err := tx.NamedQuery(
 		query,
@@ -168,9 +200,9 @@ func (r *SqlProductRepository) Create(ctx context.Context, product *entity.Produ
 
 	query := `
 		INSERT INTO product
-			(sku, title, description, category, etalase, images, weight, price, created_at, updated_at)
+			(sku, title, description, category, etalase, images, weight, price, review_count, total_rating, created_at, updated_at)
 		VALUES
-			(:sku, :title, :description, :category, :etalase, :images, :weight, :price, :created_at, :updated_at)
+			(:sku, :title, :description, :category, :etalase, :images, :weight, :price, :review_count, :total_rating, :created_at, :updated_at)
 		;
 	`
 
@@ -182,16 +214,18 @@ func (r *SqlProductRepository) Create(ctx context.Context, product *entity.Produ
 	}
 
 	params := map[string]interface{}{
-		"sku":         product.Sku,
-		"title":       product.Title,
-		"description": product.Description,
-		"category":    product.Category,
-		"etalase":     product.Etalase,
-		"images":      imagesJSON,
-		"weight":      product.Weight,
-		"price":       product.Price,
-		"created_at":  now,
-		"updated_at":  now,
+		"sku":          product.Sku,
+		"title":        product.Title,
+		"description":  product.Description,
+		"category":     product.Category,
+		"etalase":      product.Etalase,
+		"images":       imagesJSON,
+		"weight":       product.Weight,
+		"price":        product.Price,
+		"review_count": 0,
+		"total_rating": 0,
+		"created_at":   now,
+		"updated_at":   now,
 	}
 
 	_, err = tx.NamedExecContext(
@@ -223,6 +257,8 @@ func (r *SqlProductRepository) Update(ctx context.Context, product *entity.Produ
 			images = :images,
 			weight = :weight,
 			price = :price,
+			review_count = :review_count,
+			total_rating = :total_rating,
 			updated_at = :updated_at
 		WHERE
 			id = :id
@@ -234,16 +270,18 @@ func (r *SqlProductRepository) Update(ctx context.Context, product *entity.Produ
 	}
 
 	params := map[string]interface{}{
-		"id":          product.ID,
-		"sku":         product.Sku,
-		"title":       product.Title,
-		"description": product.Description,
-		"category":    product.Category,
-		"etalase":     product.Etalase,
-		"images":      imagesJSON,
-		"weight":      product.Weight,
-		"price":       product.Price,
-		"updated_at":  time.Now(),
+		"id":           product.ID,
+		"sku":          product.Sku,
+		"title":        product.Title,
+		"description":  product.Description,
+		"category":     product.Category,
+		"etalase":      product.Etalase,
+		"images":       imagesJSON,
+		"weight":       product.Weight,
+		"price":        product.Price,
+		"review_count": product.ReviewCount,
+		"total_rating": product.TotalRating,
+		"updated_at":   time.Now(),
 	}
 
 	_, err = tx.NamedExecContext(
@@ -258,11 +296,101 @@ func (r *SqlProductRepository) Update(ctx context.Context, product *entity.Produ
 	return nil
 }
 
+func (r *SqlProductRepository) CreateReview(ctx context.Context, review *entity.Review) error {
+	tx, err := common.GetTransactionFromContext(ctx, r.db)
+	if err != nil {
+		return err
+	}
+
+	query := `
+		INSERT INTO product_review
+			(product_id, rating, review_comment, created_at, updated_at)
+		VALUES
+			(:product_id, :rating, :review_comment, :created_at, :updated_at)
+		;
+	`
+
+	now := time.Now()
+
+	params := map[string]interface{}{
+		"product_id":     review.ProductID,
+		"rating":         review.Rating,
+		"review_comment": review.ReviewComment,
+		"created_at":     now,
+		"updated_at":     now,
+	}
+
+	_, err = tx.NamedExecContext(
+		ctx,
+		query,
+		params,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *SqlProductRepository) GetReviewByProductID(ctx context.Context, productID int64) ([]entity.Review, error) {
+	tx, err := common.GetTransactionFromContext(ctx, r.db)
+	if err != nil {
+		return nil, err
+	}
+
+	var models = []entity.Review{}
+
+	query := `
+		SELECT
+			prv.id,
+			prv.product_id,
+			prv.rating,
+			prv.review_comment,
+			prv.created_at
+		FROM product_review prv
+		WHERE prv.product_id = :product_id
+		ORDER BY prv.created_at DESC
+	`
+
+	params := map[string]interface{}{"product_id": productID}
+
+	rows, err := tx.NamedQuery(
+		query,
+		params,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var result entity.Review
+		if err := rows.StructScan(&result); err != nil {
+			return nil, err
+		}
+
+		models = append(models, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return models, nil
+}
+
 func (r SqlProductRepository) modelToEntity(model entity.ProductSQLX) (*entity.Product, error) {
 	var images []entity.ProductImage
 	if err := model.Images.Unmarshal(&images); err != nil {
 		// Handle the error
 		return nil, err
+	}
+
+	var avgRating float64 = 0
+
+	if model.ReviewCount > 0 {
+		avgRating = float64(model.TotalRating) / float64(model.ReviewCount)
 	}
 
 	return &entity.Product{
@@ -275,6 +403,10 @@ func (r SqlProductRepository) modelToEntity(model entity.ProductSQLX) (*entity.P
 		Images:      images,
 		Weight:      model.Weight,
 		Price:       model.Price,
+		ReviewCount: model.ReviewCount,
+		TotalRating: model.TotalRating,
+		AVGRating:   avgRating,
+		CreatedAt:   model.CreatedAt,
 	}, nil
 }
 

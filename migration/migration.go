@@ -40,6 +40,8 @@ func executeSQLMigration(db *sqlx.DB) error {
 		images JSONB,
 		weight NUMERIC,
 		price NUMERIC,
+		review_count BIGINT,
+		total_rating BIGINT,
 		created_at TIMESTAMPTZ,
 		updated_at TIMESTAMPTZ
 	);
@@ -49,6 +51,18 @@ func executeSQLMigration(db *sqlx.DB) error {
 	CREATE INDEX idx_product_category on product (category);
 	CREATE INDEX idx_product_etalase on product (etalase);
 	CREATE INDEX idx_product_created_at on product (created_at);
+
+	CREATE TABLE product_review (
+		id BIGSERIAL PRIMARY KEY,
+		product_id BIGINT,
+		rating INTEGER,
+		review_comment TEXT,
+		created_at TIMESTAMPTZ,
+		updated_at TIMESTAMPTZ,
+		FOREIGN KEY (product_id) REFERENCES product(id)
+	);
+
+	CREATE INDEX idx_product_review_product_id on product_review (product_id);
 	`
 
 	tx, err := db.Begin()

@@ -20,7 +20,7 @@ func (dr DefaultResponse) ToBytes() []byte {
 
 type ResponseSuccessWithData struct {
 	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Data    interface{} `json:"data"`
 }
 
 func (rs ResponseSuccessWithData) ToBytes() []byte {

@@ -14,10 +14,11 @@ import (
 	"github.com/layardaputra/govtech-catalog-test-project/internal/product/domain/entity"
 )
 
-// CreateProduct is a handler that create product.
-func (h *HandlerV1) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+// AddProductReview is a handler that add new product review.
+func (h *HandlerV1) AddProductReview(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
+
 	productId := chi.URLParam(r, "productID")
 	productIdInt, err := strconv.ParseInt(productId, 10, 64)
 	if err != nil {
@@ -29,7 +30,7 @@ func (h *HandlerV1) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data requests.UpdateRequestParam
+	var data requests.AddProductReviewRequest
 	// Decode the request body into the struct
 	err = json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -44,9 +45,9 @@ func (h *HandlerV1) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	data.ID = productIdInt
+	data.ProductID = productIdInt
 
-	err = data.ValidateParam()
+	err = data.ValidateRequest()
 	if err != nil {
 		custErr, ok := err.(*common.CustomError)
 		if ok {
@@ -67,25 +68,11 @@ func (h *HandlerV1) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var images []entity.ProductImage
-	for _, data := range data.Images {
-		images = append(images, entity.ProductImage{
-			ImageURL:    data.ImageURL,
-			Description: data.Description,
-		})
-	}
-
 	err = common.RunInTrans(ctx, h.DB, func(ctx context.Context) error {
-		err := h.ProductService.UpdateProduct(ctx, entity.UpdateProductParams{
-			ID:          data.ID,
-			Sku:         &data.Sku,
-			Title:       &data.Title,
-			Description: &data.Description,
-			Category:    &data.Category,
-			Etalase:     &data.Etalase,
-			Images:      images,
-			Weight:      &data.Weight,
-			Price:       &data.Price,
+		err := h.ProductService.AddReviewProduct(ctx, entity.CreateReviewParam{
+			ProductID:     data.ProductID,
+			Rating:        data.Rating,
+			ReviewComment: data.ReviewComment,
 		})
 		if err != nil {
 			return err
@@ -114,7 +101,7 @@ func (h *HandlerV1) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := common.DefaultResponse{
-		Message: "Success Update Product Data",
+		Message: "Success Add New Product Review",
 	}
 
 	w.WriteHeader(http.StatusOK)

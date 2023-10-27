@@ -27,7 +27,7 @@ func (h *HandlerV1) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write(resp.ToBytes())
 		// Log the error
-		log.Printf("Error: %v\nStack Trace:\n%s", r, debug.Stack())
+		log.Printf("Error: %v\nStack Trace:\n%s", err, debug.Stack())
 		return
 	}
 	defer r.Body.Close()
@@ -49,7 +49,7 @@ func (h *HandlerV1) CreateProduct(w http.ResponseWriter, r *http.Request) {
 			w.Write(resp.ToBytes())
 		}
 		// Log the error
-		log.Printf("Error: %v\nStack Trace:\n%s", r, debug.Stack())
+		log.Printf("Error: %v\nStack Trace:\n%s", err, debug.Stack())
 		return
 	}
 
@@ -94,7 +94,7 @@ func (h *HandlerV1) CreateProduct(w http.ResponseWriter, r *http.Request) {
 			w.Write(resp.ToBytes())
 		}
 		// Log the error
-		log.Printf("Error: %v\nStack Trace:\n%s", r, debug.Stack())
+		log.Printf("Error: %v\nStack Trace:\n%s", err, debug.Stack())
 		return
 	}
 

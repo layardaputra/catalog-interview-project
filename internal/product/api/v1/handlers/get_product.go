@@ -43,7 +43,7 @@ func (h *HandlerV1) GetProduct(w http.ResponseWriter, r *http.Request) {
 			w.Write(resp.ToBytes())
 		}
 		// Log the error
-		log.Printf("Error: %v\nStack Trace:\n%s", r, debug.Stack())
+		log.Printf("Error: %v\nStack Trace:\n%s", err, debug.Stack())
 		return
 	}
 

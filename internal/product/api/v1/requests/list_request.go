@@ -6,11 +6,12 @@ import (
 )
 
 type ListQueryParams struct {
-	Sku      string `json:"sku"`
-	Title    string `json:"title"`
-	Category string `json:"category"`
-	Etalase  string `json:"etalase"`
-	Sort     string `json:"sort"`
+	Sku         string `json:"sku"`
+	Title       string `json:"title"`
+	Category    string `json:"category"`
+	Etalase     string `json:"etalase"`
+	SortCreated string `json:"sort_created"`
+	SortRating  string `json:"sort_rating"`
 }
 
 func TransformQueryParam(queryParams url.Values) ListQueryParams {
@@ -26,8 +27,10 @@ func TransformQueryParam(queryParams url.Values) ListQueryParams {
 			query.Title = strings.TrimSpace(values[0])
 		case "etalase":
 			query.Etalase = strings.TrimSpace(values[0])
-		case "sort":
-			query.Sort = strings.TrimSpace(values[0])
+		case "sort_created":
+			query.SortCreated = strings.TrimSpace(values[0])
+		case "sort_rating":
+			query.SortRating = strings.TrimSpace(values[0])
 		}
 	}
 

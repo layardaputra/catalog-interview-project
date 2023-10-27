@@ -19,11 +19,12 @@ func (h *HandlerV1) ListProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	res, err := h.ProductService.ListProducts(ctx, entity.ListProductParams{
-		Sku:      queryRequest.Sku,
-		Title:    queryRequest.Title,
-		Category: queryRequest.Category,
-		Etalase:  queryRequest.Etalase,
-		Sort:     queryRequest.Sort,
+		Sku:         queryRequest.Sku,
+		Title:       queryRequest.Title,
+		Category:    queryRequest.Category,
+		Etalase:     queryRequest.Etalase,
+		SortCreated: queryRequest.SortCreated,
+		SortRating:  queryRequest.SortRating,
 	})
 	if err != nil {
 		custErr, ok := err.(*common.CustomError)
@@ -41,15 +42,16 @@ func (h *HandlerV1) ListProduct(w http.ResponseWriter, r *http.Request) {
 			w.Write(resp.ToBytes())
 		}
 		// Log the error
-		log.Printf("Error: %v\nStack Trace:\n%s", r, debug.Stack())
+		log.Printf("Error: %v\nStack Trace:\n%s", err, debug.Stack())
 		return
 	}
 
 	resp := common.ResponseSuccessWithData{
-		Message: "Success Get Product Data",
+		Message: "Success Get List Product Datas",
 		Data:    res,
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp.ToBytes())
+
 }

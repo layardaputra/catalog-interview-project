@@ -1,17 +1,30 @@
 package entity
 
-import "github.com/jmoiron/sqlx/types"
+import (
+	"time"
+
+	"github.com/jmoiron/sqlx/types"
+)
 
 type Product struct {
-	ID          *int64         `db:"id" json:"id"`
-	Sku         string         `db:"sku" json:"sku"`
-	Title       string         `db:"title" json:"title"`
-	Description string         `db:"description" json:"description"`
-	Category    string         `db:"category" json:"category"`
-	Etalase     string         `db:"etalase" json:"etalase"`
-	Images      []ProductImage `db:"images" json:"images"`
-	Weight      float64        `db:"weight" json:"weight"`
-	Price       float64        `db:"price" json:"price"`
+	ID          *int64         `json:"id"`
+	Sku         string         `json:"sku"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Category    string         `json:"category"`
+	Etalase     string         `json:"etalase"`
+	Images      []ProductImage `json:"images"`
+	Weight      float64        `json:"weight"`
+	Price       float64        `json:"price"`
+	ReviewCount uint64         `json:"-"`
+	TotalRating uint64         `json:"-"`
+	AVGRating   float64        `json:"rating"`
+	CreatedAt   time.Time      `json:"created_at"`
+}
+
+type ProductWithReview struct {
+	Product
+	Reviews []Review `json:"reviews"`
 }
 
 type ProductSQLX struct {
@@ -24,6 +37,9 @@ type ProductSQLX struct {
 	Images      types.JSONText `db:"images"`
 	Weight      float64        `db:"weight"`
 	Price       float64        `db:"price"`
+	ReviewCount uint64         `db:"review_count"`
+	TotalRating uint64         `db:"total_rating"`
+	CreatedAt   time.Time      ` db:"created_at"`
 }
 
 type ProductImage struct {
@@ -51,23 +67,26 @@ func NewProduct(
 		Images:      images,
 		Weight:      weight,
 		Price:       price,
+		AVGRating:   0,
 	}
 }
 
 type FilterList struct {
-	Sku          string
-	Title        string
-	Category     string
-	Etalase      string
-	IsDescending bool
+	Sku               string
+	Title             string
+	Category          string
+	Etalase           string
+	CreatedDescending *bool
+	RatingDescending  *bool
 }
 
 type ListProductParams struct {
-	Sku      string
-	Title    string
-	Category string
-	Etalase  string
-	Sort     string
+	Sku         string
+	Title       string
+	Category    string
+	Etalase     string
+	SortCreated string
+	SortRating  string
 }
 
 type CreateProductParams struct {
