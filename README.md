@@ -17,24 +17,24 @@ Before you can run the service, you need to have Go (Golang) installed on your s
    go mod tidy
    ```
 
-3. To start the service, run the following command:
+3. Run the migration, with following command:
+   ```shell
+   go run migration/migration.go
+   ```
+
+4. To start the service, run the following command:
 
    ```shell
    go run cmd/main.go
    ```
 
-4. Next, copy the sample environment file to create your own environment file:
+5. Next, copy the sample environment file to create your own environment file:
 
    ```shell
    cp .env_sample .env
    ```
 
-5. Last Run the migration, with following command:
-   ```shell
-   go run migration/migration.go
-   ```
-
-The service should now be running locally on `http://localhost:8080`.
+The service should now be running locally on `http://localhost:{YOUR_PORT}`.
 
 ## Usage
 
@@ -47,7 +47,7 @@ Adding the step to copy the environment file ensures that you have the necessary
 To create a new product, you can use the following `curl` command as an example:
 
 ```shell
-curl --location --request POST 'http://localhost:8080/api/v1/products' \
+curl --location --request POST 'http://localhost:{YOUR_PORT}/api/v1/products' \
 --header 'Content-Type: application/json' \
 --data-raw '{
   "sku": "SKU_0001",
@@ -75,7 +75,7 @@ curl --location --request POST 'http://localhost:8080/api/v1/products' \
 To retrieve a product by its ID, you can use the following `curl` command as an example:
 
 ```shell
-curl --location --request GET 'http://localhost:8080/api/v1/products/1'
+curl --location --request GET 'http://localhost:{YOUR_PORT}/api/v1/products/1'
 ```
 
 ### Get a List of Products
@@ -96,7 +96,7 @@ These query parameters can be used to filter and sort the list of products based
 To get a list of products with filtering and sorting options, use the following `curl` command as an example:
 
 ```shell
-curl --location --request GET 'http://localhost:8080/api/v1/products?sku=SKU_0001U&title=title&category=Ghoin&etalase=Dunia Lain&sort_created=oldest&sort_rating=lowest'
+curl --location --request GET 'http://localhost:{YOUR_PORT}/api/v1/products?sku=SKU_0001U&title=title&category=Ghoin&etalase=Dunia Lain&sort_created=oldest&sort_rating=lowest'
 ```
 
 ### Update a Product
@@ -127,7 +127,7 @@ curl --location --request PUT 'http://localhost:8080/api/v1/products/1' \
 To add a review to a product, use the following `curl` command as an example:
 
 ```shell
-curl --location --request POST 'http://localhost:8080/api/v1/products/1/reviews' \
+curl --location --request POST 'http://localhost:{YOUR_PORT}/api/v1/products/1/reviews' \
 --header 'Content-Type: application/json' \
 --data-raw '{
   "rating": 3,
