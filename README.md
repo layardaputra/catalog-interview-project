@@ -29,6 +29,11 @@ Before you can run the service, you need to have Go (Golang) installed on your s
    cp .env_sample .env
    ```
 
+5. Last Run the migration, with following command:
+   ```shell
+   go run migration/migration.go
+   ```
+
 The service should now be running locally on `http://localhost:8080`.
 
 ## Usage
