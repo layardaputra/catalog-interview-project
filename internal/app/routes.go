@@ -23,8 +23,4 @@ func RegisterRoutes(app *App, router *chi.Mux) {
 			r.Post("/products/{productID}/reviews", app.ProductHandler.AddProductReview)
 		})
 	})
-
-	// r.Get("/users/{userID}", app.GetUser)
-
-	// r.Delete("/users/{userID}", app.DeleteUser)
 }
