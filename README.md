@@ -38,10 +38,6 @@ The service should now be running locally on `http://localhost:{YOUR_PORT}`.
 
 ## Usage
 
-(Continue with the usage instructions as provided in the original README)
-
-Adding the step to copy the environment file ensures that you have the necessary environment variables set for your application to work correctly.
-
 ### Create a New Product
 
 To create a new product, you can use the following `curl` command as an example:
